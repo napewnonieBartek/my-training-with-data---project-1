@@ -1,0 +1,65 @@
+#adding frequency column to my table:
+
+ALTER TABLE math_april_may_summary 
+	ADD COLUMN frequency NUMERIC;
+
+
+
+
+#updating frequency column
+
+UPDATE math_april_may_summary
+SET frequency = CASE
+	WHEN potential_earnings != 0 THEN ROUND(profit/potential_earnings,2)
+	ELSE NULL
+END;
+
+
+
+
+#assessemnet of the general quality rate of classes based on my scheme :) :
+
+SELECT
+	id
+	, ROUND((location_rate + quality_rate + 0.5 * suitability_rate) * frequency,2) AS general_quality_rate
+FROM math_april_may_summary
+WHERE frequency IS NOT NULL
+ORDER BY general_quality_rate DESC;
+
+
+
+
+#checking profit by students from different classes/schools:
+
+SELECT
+	COUNT(*) AS count
+	, class
+	, school
+	, SUM(profit) AS profit_by_class
+FROM math_april_may_summary
+GROUP BY school, class
+ORDER BY profit_by_class DESC;
+
+
+
+
+#checking the overall profitability per hour taking into account the location factor:
+
+SELECT *
+FROM (
+    SELECT
+        id,
+        ROUND(
+            CASE 
+                WHEN location_rate = 5 THEN 1.00
+                WHEN location_rate = 4 THEN 0.85
+                WHEN location_rate = 3 THEN 0.70
+                WHEN location_rate = 2 THEN 0.55
+                WHEN location_rate = 1 THEN 0.40
+            END * frequency * profit / hours, 
+            2
+        ) AS overall_profitability
+    FROM math_april_may_summary
+) AS subquery
+WHERE overall_profitability IS NOT NULL
+ORDER BY overall_profitability DESC;
